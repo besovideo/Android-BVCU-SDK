@@ -1,6 +1,8 @@
 package com.smarteye.sdk.trans.cu.demo;
 
 import static com.smarteye.adapter.BVCU_MediaDir.BVCU_MEDIADIR_AUDIORECV;
+import static com.smarteye.adapter.BVCU_MediaDir.BVCU_MEDIADIR_AUDIOSEND;
+import static com.smarteye.adapter.BVCU_MediaDir.BVCU_MEDIADIR_TALKONLY;
 import static com.smarteye.adapter.BVCU_MediaDir.BVCU_MEDIADIR_VIDEORECV;
 
 import androidx.annotation.NonNull;
@@ -39,19 +41,25 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
     private static final String TAG = "PreviewTAG";
     private SurfaceView surfaceView;
     private TextView videoAudioBtn, videoBtn, audioBtn, rotateBtn, closeBtn, waitingText;
+    private TextView talkBtn, shoutBtn;
     private String deviceID;
     private int channelIndex;
     private int hDialog;
+    private int hDialogPTT;// 对讲Token
     private int currentRotate = 0; // 旋转角度
     private int currentAVStreamDir; // 媒体流方向
+    private int currentPTTStreamDir;
     private boolean isOpening; // 是否正在等待打开
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private AudioHelper mAudioHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_preview);
         EventBus.getDefault().register(this);
+        mAudioHelper = new AudioHelper(getApplicationContext());
+        mAudioHelper.start();
         initView();
         initData();
         initAction();
@@ -68,6 +76,8 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
         videoBtn = findViewById(R.id.activity_preview_video_btn);
         audioBtn = findViewById(R.id.activity_preview_audio_btn);
         rotateBtn = findViewById(R.id.activity_preview_rotate_btn);
+        talkBtn = findViewById(R.id.activity_preview_talk_btn);
+        shoutBtn = findViewById(R.id.activity_preview_shout_btn);
         closeBtn = findViewById(R.id.activity_preview_close_btn);
         waitingText = findViewById(R.id.activity_preview_waiting_text);
     }
@@ -97,6 +107,8 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
         videoBtn.setOnClickListener(this);
         audioBtn.setOnClickListener(this);
         rotateBtn.setOnClickListener(this);
+        talkBtn.setOnClickListener(this);
+        shoutBtn.setOnClickListener(this);
         closeBtn.setOnClickListener(this);
     }
 
@@ -122,6 +134,25 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
                 @Override
                 public void run() {
                     openPreview();
+                }
+            }, delayMs);
+        } else {
+            openPreview();
+        }
+    }
+
+    /**
+     * 延迟打开对讲
+     * @param delayMs 延迟毫秒数
+     */
+    private void openPTT(int delayMs) {
+        isOpening = true;
+        updateBtnStatus();
+        if (delayMs > 0) {
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    openPTT();
                 }
             }, delayMs);
         } else {
@@ -160,13 +191,60 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
      * 关闭通道
      */
     private void closePreview() {
-        Log.d(TAG, "close dialog");
-        BVSmarteye.getBVCUManger(PreviewActivity.this).closeDialog(hDialog);
-        hDialog = 0;
+        Log.d(TAG, "close dialog, hDialog = " + hDialog);
+        if (hDialog != 0) {
+            BVSmarteye.getBVCUManger(PreviewActivity.this).closeDialog(hDialog);
+            hDialog = 0;
+            currentAVStreamDir = 0;
+        }
+    }
+
+    /**
+     * 打开对讲/喊话
+     */
+    private void openPTT() {
+        BVCU_DialogInfo dialogInfo = new BVCU_DialogInfo();
+        dialogInfo.stParam = new BVCU_DialogParam();
+        dialogInfo.stParam.iTargetCount = 1;
+        dialogInfo.stParam.pTarget = new BVCU_DialogTarget[1];
+        dialogInfo.stParam.pTarget[0] = new BVCU_DialogTarget();
+        dialogInfo.stParam.pTarget[0].iIndexMajor = channelIndex;
+        dialogInfo.stParam.pTarget[0].iIndexMinor = -1;
+        dialogInfo.stParam.pTarget[0].szID = deviceID;
+
+        dialogInfo.stParam.iAVStreamDir = currentPTTStreamDir;
+        dialogInfo.stControlParam = new BVCU_DialogControlParam();
+        waitingText.setVisibility(View.VISIBLE);
+        hDialogPTT = BVSmarteye.getBVCUManger(this).invite(dialogInfo);
+        Log.d(TAG, "hDialogPTT: " + hDialogPTT);
+    }
+
+    private void closePTT() {
+        Log.d(TAG, "close ptt dialog, hDialogPTT = " + hDialogPTT);
+        if (hDialogPTT != 0) {
+            BVSmarteye.getBVCUManger(PreviewActivity.this).closeDialog(hDialogPTT);
+            hDialogPTT = 0;
+            currentPTTStreamDir = 0;
+        }
+    }
+
+    private void closePTT(int delayMs) {
+        Log.d(TAG, "close ptt dialog, hDialogPTT = " + hDialogPTT + ", delayMs = " + delayMs);
+        if (delayMs > 0 && hDialogPTT != 0) {
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    BVSmarteye.getBVCUManger(PreviewActivity.this).closeDialog(hDialogPTT);
+                    hDialogPTT = 0;
+                    currentPTTStreamDir = 0;
+                }
+            }, delayMs);
+        }
     }
 
     @Override
     protected void onDestroy() {
+        mAudioHelper.end();
         EventBus.getDefault().unregister(this);
         super.onDestroy();
     }
@@ -186,8 +264,8 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
             int hDialog = (int) message.getObjectArray()[0];
             int iEventCode = (int) message.getObjectArray()[1];
             Log.d(TAG, "hDialog: " + hDialog + ", iEventCode: " + iEventCode);
-            if (hDialog != this.hDialog)
-                return;
+//            if (hDialog != this.hDialog)
+//                return;
 
             waitingText.setVisibility(View.INVISIBLE);
 
@@ -195,7 +273,7 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
                 isOpening = false;
                 BVCU_Event_DialogCmd pParam = (BVCU_Event_DialogCmd) message.getObjectArray()[2];
                 if (pParam != null && pParam.iResult == BVCU_Result.BVCU_RESULT_S_OK) {
-                    Log.d(TAG, "打开成功");
+                    Log.d(TAG, "打开成功, iAVStreamDir = " + pParam.pDialogParam.iAVStreamDir);
                 } else {
                     Log.d(TAG, "打开失败");
                 }
@@ -225,27 +303,54 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
         if (view.getId() == videoAudioBtn.getId()) {
             if (isOpening || currentAVStreamDir == (BVCU_MEDIADIR_VIDEORECV | BVCU_MEDIADIR_AUDIORECV))
                 return;
-            currentAVStreamDir = BVCU_MEDIADIR_VIDEORECV | BVCU_MEDIADIR_AUDIORECV;
             closePreview();
-            openPreview(500);
+            currentAVStreamDir = BVCU_MEDIADIR_VIDEORECV | BVCU_MEDIADIR_AUDIORECV;
+            openPreview(1000);
         } else if (view.getId() == videoBtn.getId()) {
             if (isOpening || currentAVStreamDir == BVCU_MEDIADIR_VIDEORECV)
                 return;
-            currentAVStreamDir = BVCU_MEDIADIR_VIDEORECV;
             closePreview();
-            openPreview(500);
+            currentAVStreamDir = BVCU_MEDIADIR_VIDEORECV;
+            openPreview(1000);
         } else if (view.getId() == audioBtn.getId()) {
             if (isOpening || currentAVStreamDir == BVCU_MEDIADIR_AUDIORECV)
                 return;
-            currentAVStreamDir = BVCU_MEDIADIR_AUDIORECV;
             closePreview();
-            openPreview(500);
+            currentAVStreamDir = BVCU_MEDIADIR_AUDIORECV;
+            openPreview(1000);
+        } else if (view.getId() == talkBtn.getId()) {
+            // 对讲
+            if (isOpening) {
+                return;
+            }
+            if (currentPTTStreamDir == BVCU_MEDIADIR_TALKONLY) {
+                closePTT();
+                updateBtnStatus();
+            } else {
+                closePTT();
+                currentPTTStreamDir = BVCU_MEDIADIR_TALKONLY;
+                openPTT(1000);
+            }
+        } else if (view.getId() == shoutBtn.getId()) {
+            // 喊话
+            if (isOpening) {
+                return;
+            }
+            if (currentPTTStreamDir == BVCU_MEDIADIR_AUDIOSEND) {
+                closePTT();
+                updateBtnStatus();
+            } else {
+                closePTT();
+                currentPTTStreamDir = BVCU_MEDIADIR_AUDIOSEND;
+                openPTT(1000);
+            }
         } else if (view.getId() == rotateBtn.getId()) {
             if (hDialog != 0) {
                 rotate();
             }
         } else if (view.getId() == closeBtn.getId()) {
             closePreview();
+            closePTT(1000);// 不能同时进行两次close通道操作
             finish();
         }
     }
@@ -268,6 +373,17 @@ public class PreviewActivity extends AppCompatActivity implements View.OnClickLi
             videoAudioBtn.setTextColor(defaultColor);
             videoBtn.setTextColor(defaultColor);
             audioBtn.setTextColor(selectedColor);
+        }
+
+        if (currentPTTStreamDir == BVCU_MEDIADIR_TALKONLY) {
+            talkBtn.setTextColor(selectedColor);
+            shoutBtn.setTextColor(defaultColor);
+        } else if (currentPTTStreamDir == BVCU_MEDIADIR_AUDIOSEND) {
+            talkBtn.setTextColor(defaultColor);
+            shoutBtn.setTextColor(selectedColor);
+        } else {
+            talkBtn.setTextColor(defaultColor);
+            shoutBtn.setTextColor(defaultColor);
         }
     }
 }

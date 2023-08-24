@@ -41,50 +41,82 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="horizontal">
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/activity_preview_video_audio_btn"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
                 android:layout_weight="1"
-                android:gravity="center"
+                android:orientation="horizontal">
 
-                android:text="音视频" />
+                <TextView
+                    android:id="@+id/activity_preview_video_audio_btn"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
 
-            <TextView
-                android:id="@+id/activity_preview_video_btn"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
+                    android:text="音视频" />
+
+                <TextView
+                    android:id="@+id/activity_preview_video_btn"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="视频" />
+
+                <TextView
+                    android:id="@+id/activity_preview_audio_btn"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="音频" />
+
+                <TextView
+                    android:id="@+id/activity_preview_rotate_btn"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="旋转" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
                 android:layout_weight="1"
-                android:gravity="center"
-                android:text="视频" />
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/activity_preview_audio_btn"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="音频" />
+                <TextView
+                    android:id="@+id/activity_preview_talk_btn"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="对讲" />
 
-            <TextView
-                android:id="@+id/activity_preview_rotate_btn"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="旋转" />
+                <TextView
+                    android:id="@+id/activity_preview_shout_btn"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="喊话" />
 
-            <TextView
-                android:id="@+id/activity_preview_close_btn"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="关闭" />
+                <TextView
+                    android:id="@+id/activity_preview_close_btn"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="关闭" />
+
+            </LinearLayout>
+
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

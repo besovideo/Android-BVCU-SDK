@@ -53,6 +53,7 @@ public class DeviceItemAdapter extends BaseAdapter {
     @Override
     public View getView(int i, View view, ViewGroup viewGroup) {
         ViewHolder holder;
+        int devicePosition = i;
         if (view == null) {
             view = LayoutInflater.from(context).inflate(R.layout.item_device, null);
             holder = new ViewHolder();
@@ -81,7 +82,7 @@ public class DeviceItemAdapter extends BaseAdapter {
             holder.channelList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                    BVCU_PUChannelInfo puDevice = (BVCU_PUChannelInfo)getItem(i);
+                    BVCU_PUChannelInfo puDevice = (BVCU_PUChannelInfo)getItem(devicePosition);
                     if (puDevice == null)
                         return;
                     String deviceID = puDevice.szPUID;
